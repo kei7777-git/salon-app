@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-// 設定（matcher）を削除して、全ページで強制発動させる
-export function middleware(req: NextRequest) {
-  // 画面に「Middleware is Working!」とだけ表示して強制終了する
-  return new NextResponse('Middleware is Working! (Test)', { status: 200 });
+// 設定(matcher)を削除しました。これで全ページで発動します。
+export function middleware(request: NextRequest) {
+  // 画面に「ALIVE」と表示して強制終了
+  return new NextResponse('MIDDLEWARE IS ALIVE!', { status: 200 });
 }
