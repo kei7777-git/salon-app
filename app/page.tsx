@@ -1,65 +1,127 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/utils/supabase";
+import AuthForm from "./components/AuthForm";
+import CourseCard from "./components/CourseCard";
+import ReservationList from "./components/ReservationList";
+import ProfileEdit from "./components/ProfileEdit"; // 追加
+
+type Course = {
+  id: string;
+  title: string;
+  description: string;
+  price_points: number;
+  duration_minutes: number;
+};
 
 export default function Home() {
+  const [user, setUser] = useState<any>(null);
+  const [points, setPoints] = useState<number>(0);
+  const [displayName, setDisplayName] = useState<string>(''); // 名前保存用
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // データ読み込み関数
+  const fetchData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user;
+    setUser(currentUser ?? null);
+
+    if (currentUser) {
+      // ポイントと名前(display_name)を取得
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_points, display_name')
+        .eq('id', currentUser.id)
+        .single();
+      
+      setPoints(profile?.current_points ?? 0);
+      setDisplayName(profile?.display_name ?? '');
+    }
+
+    const { data } = await supabase.from("courses").select("*");
+    if (data) setCourses(data);
+    
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchData();
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) return <div className="min-h-screen flex justify-center items-center">読み込み中...</div>;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen p-8 bg-gray-50">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* ヘッダー */}
+        <div className="flex justify-between items-center mb-8 border-b pb-4">
+          <h1 className="text-3xl font-bold text-gray-800">
+            サロン予約メニュー
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <div>
+            {user ? (
+              <div className="text-right">
+                {/* 名前があれば名前を表示、なければメアドを表示 */}
+                <div className="text-sm text-gray-500 mb-1">
+                  ようこそ、
+                  <span className="font-bold text-gray-800 ml-1">
+                    {displayName || user.email}
+                  </span> さん
+                </div>
+                <div className="text-xl font-bold text-blue-600">
+                  所持ポイント: {points.toLocaleString()} pt
+                </div>
+              </div>
+            ) : (
+              <AuthForm />
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* コース一覧 */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
+          {courses.map((course) => (
+            <CourseCard 
+              key={course.id} 
+              course={course} 
+              userId={user?.id}
+              userPoints={points}
+              onReserveComplete={fetchData} 
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
-    </div>
+
+        {/* マイページエリア */}
+        {user && (
+          <div className="border-t pt-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">マイページ</h2>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* 左側：予約リスト */}
+              <div className="space-y-6">
+                 <ReservationList userId={user.id} />
+              </div>
+              
+              {/* 右側：プロフィール設定 */}
+              <div>
+                <ProfileEdit 
+                  userId={user.id} 
+                  initialName={displayName} 
+                  onUpdate={fetchData} 
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </main>
   );
 }
