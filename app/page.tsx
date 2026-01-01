@@ -180,8 +180,12 @@ export default function Home() {
                   key={course.id} 
                   course={course} 
                   userId={session.user.id} 
-                  userPoints={profile?.current_points || 0} 
+                  userPoints={profile?.current_points || 0}
+                  onReserveComplete={() => {
+                    console.log("予約完了");
+                  }}
                 />
+                
               ))
             )}
           </div>
