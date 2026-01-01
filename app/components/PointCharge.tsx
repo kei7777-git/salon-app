@@ -5,10 +5,11 @@ import { supabase } from '@/utils/supabase';
 
 type Props = {
   userId: string;
-  onChargeComplete: () => void; // チャージ完了後に画面を更新するため
+  currentPoints: number;      // ★追加: page.tsxから渡されるため必須
+  onChargeComplete?: () => void; // ★変更: page.tsxで渡されていないため「?」をつけて省略可能にしました
 };
 
-export default function PointCharge({ userId, onChargeComplete }: Props) {
+export default function PointCharge({ userId, currentPoints, onChargeComplete }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleCharge = async (amount: number) => {
@@ -16,24 +17,25 @@ export default function PointCharge({ userId, onChargeComplete }: Props) {
 
     setLoading(true);
     try {
-      // 1. 現在のポイントを取得
-      const { data: profile } = await supabase
+      // 1. ポイントを加算（propsのcurrentPointsではなく、念のためDBの最新値を取得しても良いが、ここではシンプルに計算）
+      // ※ 元のコードに合わせてDB取得を行うロジックを維持します
+      const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('current_points')
         .eq('id', userId)
         .single();
 
-      if (!profile) throw new Error('ユーザーが見つかりません');
+      if (fetchError || !profile) throw new Error('ユーザー情報の取得に失敗しました');
 
-      // 2. ポイントを加算
       const newPoints = (profile.current_points || 0) + amount;
 
-      const { error } = await supabase
+      // 2. 更新実行
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ current_points: newPoints })
         .eq('id', userId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       // 3. 履歴に記録
       await supabase.from('point_logs').insert({
@@ -43,7 +45,13 @@ export default function PointCharge({ userId, onChargeComplete }: Props) {
       });
 
       alert(`${amount}pt チャージしました！`);
-      onChargeComplete(); // 親コンポーネントに通知
+      
+      // 親から関数が渡されていれば実行、なければ画面をリロード
+      if (onChargeComplete) {
+        onChargeComplete();
+      } else {
+        window.location.reload();
+      }
 
     } catch (err: any) {
       alert('エラー: ' + err.message);
@@ -54,7 +62,12 @@ export default function PointCharge({ userId, onChargeComplete }: Props) {
 
   return (
     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-6">
-      <h3 className="font-bold text-gray-700 mb-3">ポイントチャージ</h3>
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-bold text-gray-700">ポイントチャージ</h3>
+        {/* せっかくデータを受け取っているので現在のポイントを表示します */}
+        <span className="text-sm text-blue-600 font-bold">現在: {currentPoints.toLocaleString()} pt</span>
+      </div>
+      
       <div className="flex gap-2">
         <button
           onClick={() => handleCharge(1000)}
