@@ -5,7 +5,7 @@ import { supabase } from '@/utils/supabase';
 import CourseCard from './components/CourseCard';
 import PointCharge from './components/PointCharge';
 import ReservationList from './components/ReservationList';
-import LandingPage from './components/LandingPage'; // LP読み込み
+import LandingPage from './components/LandingPage';
 
 export default function Home() {
   // --- State ---
@@ -105,19 +105,18 @@ export default function Home() {
   }
 
   // 3. 名前未設定（名前登録画面）
-  // ※ display_name が空の場合にここを表示
   if (profile && !profile.display_name) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold mb-4">はじめまして！🎉</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">はじめまして！🎉</h2>
+          <p className="text-gray-800 mb-6 font-medium">
             予約に使用するお名前（ニックネーム可）を教えてください。
           </p>
           <input
             type="text"
             placeholder="例: 山田 花子"
-            className="w-full border p-3 rounded-lg mb-4 text-lg"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 text-lg text-gray-900 bg-gray-50"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
           />
@@ -139,14 +138,14 @@ export default function Home() {
       {/* ヘッダー */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="font-bold text-lg">My Salon</h1>
+          <h1 className="font-bold text-xl text-gray-900">My Salon</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-bold text-blue-600">
+            <span className="text-lg font-bold text-blue-600">
               {profile?.current_points?.toLocaleString() || 0} pt
             </span>
             <button 
               onClick={handleLogout}
-              className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 px-2 py-1 rounded"
+              className="text-xs text-gray-500 hover:text-red-600 border border-gray-300 px-3 py-1 rounded font-medium bg-white"
             >
               ログアウト
             </button>
@@ -157,23 +156,23 @@ export default function Home() {
       <main className="max-w-md mx-auto px-4 py-8 space-y-10">
         
         {/* ユーザー挨拶 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-800">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">
             こんにちは、{profile?.display_name} 様 👋
           </h2>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-gray-700 font-medium mt-2">
             今日はどのコースでリラックスしますか？
           </p>
         </div>
 
         {/* コース一覧 */}
         <section>
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <h3 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-2">
             💆‍♀️ コースを選択して予約
           </h3>
           <div className="space-y-4">
             {courses.length === 0 ? (
-              <p className="text-gray-400 text-center py-4">コース準備中...</p>
+              <p className="text-gray-500 text-center py-4">コース準備中...</p>
             ) : (
               courses.map((course) => (
                 <CourseCard 
@@ -185,7 +184,6 @@ export default function Home() {
                     console.log("予約完了");
                   }}
                 />
-                
               ))
             )}
           </div>
